@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import classNames from "../utils/class-names";
 import useInterval from "../utils/useInterval";
+import Break from "./Break";
+import Focus from "./Focus";
+import Session from "./Session";
 
 // These functions are defined outside of the component to insure they do not have access to state
 // and are, therefore more likely to be pure.
@@ -77,7 +80,7 @@ function Pomodoro() {
       if (New < 10){
         New = "0" + New;
       }
-      setFocusDuration(New);
+      setFocusDuration((previousDuration) => New);
     }
   };
   const decreaseFocusTime = () => {
@@ -86,7 +89,7 @@ function Pomodoro() {
       if (New < 10){
         New = "0" + New;
       }
-      setFocusDuration(New);
+      setFocusDuration((previousDuration) => New);
     }
   };
   const increaseBreaktime = () => {
@@ -97,7 +100,7 @@ function Pomodoro() {
         New = "0" + New;
       }
       let str = New.toString();
-      setBreakDuration(str);
+      setBreakDuration((previousDuration) => str);
     } 
   };
   const decreaseBreakTime = () => {
@@ -108,7 +111,7 @@ function Pomodoro() {
         New = "0" + New;
       }
       let str = New.toString();
-      setBreakDuration(str);
+      setBreakDuration((previousDuration) => str);
     }
   };
 
@@ -131,9 +134,9 @@ function Pomodoro() {
    * Called whenever the play/pause button is clicked.
    */
   function playPause() {
-    setDisable(false);
-    setDisableTime(true);
-    setDisableProgress(true);
+    setDisable((previous) => false);
+    setDisableTime((previous) => true);
+    setDisableProgress((previous) => true);
     setIsTimerRunning((prevState) => {
       const nextState = !prevState;
       if (nextState) {
@@ -155,82 +158,25 @@ function Pomodoro() {
   }
   function startStop(){
     if (disable !== true){
-      setDisableProgress(false);
-      setIsTimerRunning(false);
+      setDisableProgress((previous) => false);
+      setIsTimerRunning((previous) => false);
       session.timeRemaining = null;
       session.label = null;
-      setDisable(true);
+      setDisable((previous) => true);
     }
     else {
-      setDisableTime(false);
+      setDisableTime((previous) => false);
     }
   }
 
   return (
     <div className="pomodoro">
-      <div className="row">
-        <div className="col">
-          <div className="input-group input-group-lg mb-2">
-            <span className="input-group-text" data-testid="duration-focus">
-              {/* TODO: Update this text to display the current focus session duration */}
-              Focus Duration: {focusDuration}:00
-            </span>
-            <div className="input-group-append">
-              {/* TODO: Implement decreasing focus duration and disable during a focus or break session */}
-              <button
-                type="button"
-                className="btn btn-secondary"
-                data-testid="decrease-focus"
-                onClick = {decreaseFocusTime}
-                disabled={disableTime}
-              >
-                <span className="oi oi-minus" />
-              </button>
-              {/* TODO: Implement increasing focus duration  and disable during a focus or break session */}
-              <button
-                type="button"
-                className="btn btn-secondary"
-                data-testid="increase-focus"
-                onClick = {increaseFocusTime}
-                disabled={disableTime}
-              >
-                <span className="oi oi-plus" />
-              </button>
-            </div>
-          </div>
-        </div>
-        <div className="col">
-          <div className="float-right">
-            <div className="input-group input-group-lg mb-2">
-              <span className="input-group-text" data-testid="duration-break">
-                {/* TODO: Update this text to display the current break session duration */}
-                Break Duration: {breakDuration}:00
-              </span>
-              <div className="input-group-append">
-                {/* TODO: Implement decreasing break duration and disable during a focus or break session*/}
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  data-testid="decrease-break"
-                  onClick = {decreaseBreakTime}
-                  disabled={disableTime}
-                >
-                  <span className="oi oi-minus" />
-                </button>
-                {/* TODO: Implement increasing break duration and disable during a focus or break session*/}
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  data-testid="increase-break"
-                  onClick = {increaseBreaktime}
-                  disabled={disableTime}
-                >
-                  <span className="oi oi-plus" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div>
+        <Focus focusDuration={focusDuration} disableTime={disableTime} 
+        increaseFocusTime={increaseFocusTime} decreaseFocusTime={decreaseFocusTime} />
+        <Break breakDuration={breakDuration} disableTime={disableTime} 
+        increaseBreaktime={increaseBreaktime} decreaseBreakTime={decreaseBreakTime} />
+        <div/>
       </div>
       <div className="row">
         <div className="col">
@@ -271,39 +217,8 @@ function Pomodoro() {
       </div>
       <div>
         {/* TODO: This area should show only when there is an active focus or break - i.e. the session is running or is paused */}
-        {disableProgress ? 
-        <div>
-        <div className="row mb-2">
-          <div className="col">
-            {/* TODO: Update message below to include current session (Focusing or On Break) total duration */}
-            {session.label === "On Break" ? 
-            <h2 data-testid="session-title">
-              {session?.label} for {breakDuration}:00 minutes
-            </h2> : 
-            <h2 data-testid="session-title">
-            {session?.label} for {focusDuration}:00 minutes
-          </h2> }
-            {/* TODO: Update message below correctly format the time remaining in the current session */}
-            <p className="lead" data-testid="session-sub-title">
-              {new Date(session.timeRemaining * 1000).toISOString().substr(11, 8)} remaining
-            </p> 
-          </div>
-        </div>
-        <div className="row mb-2">
-          <div className="col">
-            <div className="progress" style={{ height: "20px" }}>
-              <div
-                className="progress-bar"
-                role="progressbar"
-                aria-valuemin="0"
-                aria-valuemax="0"
-                aria-valuenow={session.progress} // TODO: Increase aria-valuenow as elapsed time increases
-                style={{ width: session.progress + '%' }} // TODO: Increase width % as elapsed time increases
-              />
-            </div>
-          </div>
-        </div>
-        </div> : null}
+        <Session session={session} breakDuration={breakDuration} 
+        focusDuration={focusDuration} disableProgress={disableProgress} />
       </div>
     </div>
   );
